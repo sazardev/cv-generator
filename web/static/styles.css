@@ -140,12 +140,13 @@ label {
     font-weight: 500;
     color: var(--text-primary);
     font-size: 13px;
+    margin-bottom: 2px;
 }
 
 input,
 textarea,
 select {
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid var(--border-medium);
     border-radius: var(--radius-small);
     font-family: inherit;
@@ -153,6 +154,14 @@ select {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: var(--transition);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+    border-color: var(--border-light);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 input:focus,
@@ -160,17 +169,19 @@ textarea:focus,
 select:focus {
     outline: none;
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 170, 220, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 input::placeholder,
 textarea::placeholder {
     color: var(--text-tertiary);
+    font-size: 13px;
 }
 
 textarea {
     resize: vertical;
-    min-height: 80px;
+    min-height: 90px;
+    line-height: 1.5;
 }
 
 /* Buttons */
@@ -284,7 +295,7 @@ textarea {
     min-width: 120px;
 }
 
-/* Modal */
+/* Modal - Improved for preview */
 .modal {
     display: none;
     position: fixed;
@@ -292,7 +303,7 @@ textarea {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
     z-index: 1000;
     animation: fadeIn 0.15s ease;
 }
@@ -307,11 +318,11 @@ textarea {
 .modal-content {
     background-color: var(--bg-primary);
     border-radius: var(--radius-medium);
-    max-width: 800px;
-    width: 100%;
-    max-height: 90vh;
+    max-width: 95vw;
+    width: 900px;
+    max-height: 95vh;
     overflow: hidden;
-    box-shadow: var(--shadow-medium);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     animation: slideUp 0.15s ease;
 }
 
@@ -321,96 +332,155 @@ textarea {
     justify-content: space-between;
     padding: 20px 24px;
     border-bottom: 1px solid var(--border-light);
+    background-color: var(--bg-tertiary);
 }
 
 .modal-header h3 {
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .modal-close {
     background: none;
     border: none;
-    font-size: 16px;
+    font-size: 18px;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 4px;
+    padding: 8px;
     border-radius: var(--radius-small);
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-close:hover {
-    background-color: var(--accent-gray);
+    background-color: var(--accent-gray-hover);
+    color: var(--text-primary);
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 0;
     overflow-y: auto;
-    max-height: calc(90vh - 120px);
+    max-height: calc(95vh - 80px);
+    background-color: #f5f5f5;
 }
 
-/* CV Preview */
+/* CV Preview - Exact PDF Match */
+.cv-preview-container {
+    background: #f5f5f5;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
 .cv-preview {
+    /* A4 dimensions at 96 DPI: 794px x 1123px */
+    width: 794px;
+    min-height: 1123px;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     font-family: Arial, sans-serif;
-    line-height: 1.4;
-    color: #333;
+    font-size: 10pt;
+    line-height: 1.2;
+    color: rgb(80, 80, 80);
+    padding: 75px;
+    /* 20mm converted to pixels approximately */
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
-.cv-preview h1 {
-    font-size: 24px;
-    color: #2c3e50;
+/* Header Section - Exact PDF styling */
+.cv-preview .cv-header {
+    margin-bottom: 30px;
+}
+
+.cv-preview .cv-name {
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 24pt;
+    color: rgb(44, 62, 80);
+    margin: 0 0 12px 0;
+    line-height: 1.1;
+}
+
+.cv-preview .cv-contact {
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    color: rgb(100, 100, 100);
     margin-bottom: 8px;
+    line-height: 1.2;
 }
 
-.cv-preview .contact-info {
-    color: #666;
-    margin-bottom: 20px;
-    font-size: 12px;
+.cv-preview .cv-separator {
+    height: 1px;
+    background-color: rgb(200, 200, 200);
+    margin: 8px 0;
 }
 
-.cv-preview .section {
-    margin-bottom: 20px;
-}
-
-.cv-preview .section h2 {
-    font-size: 14px;
-    color: #2c3e50;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 4px;
-}
-
-.cv-preview .experience-item,
-.cv-preview .education-item {
+/* Section Headers - Exact PDF styling */
+.cv-preview .cv-section {
     margin-bottom: 16px;
 }
 
-.cv-preview .item-title {
+.cv-preview .cv-section-title {
+    font-family: Arial, sans-serif;
     font-weight: bold;
-    font-size: 12px;
-    color: #444;
+    font-size: 14pt;
+    color: rgb(44, 62, 80);
+    margin: 0 0 6px 0;
+    text-transform: uppercase;
 }
 
-.cv-preview .item-subtitle {
-    font-style: italic;
-    color: #666;
-    font-size: 10px;
+.cv-preview .cv-section-content {
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    color: rgb(80, 80, 80);
+    line-height: 1.2;
     margin-bottom: 4px;
 }
 
-.cv-preview .item-description {
-    font-size: 11px;
-    color: #555;
-    margin-top: 4px;
+/* Experience and Education Items */
+.cv-preview .cv-item {
+    margin-bottom: 12px;
 }
 
-.cv-preview .skills-list,
-.cv-preview .languages-list {
-    font-size: 11px;
-    color: #555;
+.cv-preview .cv-item-title {
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 12pt;
+    color: rgb(60, 60, 60);
+    margin: 0 0 5px 0;
+    line-height: 1.1;
+}
+
+.cv-preview .cv-item-dates {
+    font-family: Arial, sans-serif;
+    font-style: italic;
+    font-size: 9pt;
+    color: rgb(120, 120, 120);
+    margin: 0 0 4px 0;
+    line-height: 1.1;
+}
+
+.cv-preview .cv-item-description {
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    color: rgb(80, 80, 80);
+    line-height: 1.2;
+    margin: 4px 0 0 0;
+}
+
+/* Skills and Languages */
+.cv-preview .cv-list-content {
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    color: rgb(80, 80, 80);
+    line-height: 1.2;
 }
 
 /* Animations */
@@ -450,6 +520,7 @@ textarea {
 
     .header-actions {
         justify-content: center;
+        flex-wrap: wrap;
     }
 
     .form-grid {
@@ -466,6 +537,39 @@ textarea {
     .modal-content {
         margin: 10px;
         max-height: calc(100vh - 20px);
+        width: calc(100vw - 20px);
+    }
+
+    .cv-preview {
+        width: 100%;
+        min-height: auto;
+        padding: 40px 20px;
+        font-size: 9pt;
+    }
+
+    .cv-preview .cv-name {
+        font-size: 20pt;
+    }
+
+    .cv-preview .cv-section-title {
+        font-size: 12pt;
+    }
+
+    .cv-preview .cv-item-title {
+        font-size: 11pt;
+    }
+
+    .skill-item,
+    .language-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .skill-item .btn-danger,
+    .language-item .btn-danger {
+        align-self: flex-end;
+        width: auto;
     }
 }
 

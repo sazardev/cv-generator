@@ -369,11 +369,13 @@ function generatePreview(personalInfo, experience, education, skills, languages)
     const previewContent = document.getElementById('preview-content');
 
     let html = `
-        <div class="cv-preview">
-            <h1>${personalInfo.fullName || 'Tu Nombre'}</h1>
-            <div class="contact-info">
+        <div class="cv-preview-container">
+            <div class="cv-preview">
+                <div class="cv-header">
+                    <div class="cv-name">${personalInfo.fullName || 'Tu Nombre'}</div>
     `;
 
+    // Contact information - exact PDF format
     const contacts = [];
     if (personalInfo.email) contacts.push(personalInfo.email);
     if (personalInfo.phone) contacts.push(personalInfo.phone);
@@ -382,75 +384,113 @@ function generatePreview(personalInfo, experience, education, skills, languages)
     if (personalInfo.github) contacts.push(`GitHub: ${personalInfo.github}`);
     if (personalInfo.website) contacts.push(`Website: ${personalInfo.website}`);
 
-    html += contacts.join(' | ');
-    html += '</div>';
+    if (contacts.length > 0) {
+        html += `<div class="cv-contact">${contacts.join(' | ')}</div>`;
+    }
 
+    html += `<div class="cv-separator"></div>`;
+    html += `</div>`; // Close cv-header
+
+    // Summary section - exact PDF format
     if (personalInfo.summary) {
         html += `
-            <div class="section">
-                <h2>Resumen</h2>
-                <p>${personalInfo.summary}</p>
+            <div class="cv-section">
+                <div class="cv-section-title">SUMMARY</div>
+                <div class="cv-section-content">${personalInfo.summary}</div>
             </div>
         `;
     }
 
+    // Experience section - exact PDF format
     if (experience.length > 0) {
         html += `
-            <div class="section">
-                <h2>Experiencia</h2>
+            <div class="cv-section">
+                <div class="cv-section-title">EXPERIENCE</div>
         `;
         experience.forEach(exp => {
             html += `
-                <div class="experience-item">
-                    <div class="item-title">${exp.position} en ${exp.company}</div>
-                    <div class="item-subtitle">${exp.startDate} - ${exp.endDate || 'Presente'}</div>
-                    ${exp.description ? `<div class="item-description">${exp.description}</div>` : ''}
-                </div>
+                <div class="cv-item">
+                    <div class="cv-item-title">${exp.position} at ${exp.company}</div>
             `;
+
+            // Date formatting exactly like PDF
+            let dateRange = '';
+            if (exp.startDate && exp.endDate) {
+                dateRange = `${exp.startDate} - ${exp.endDate}`;
+            } else if (exp.startDate) {
+                dateRange = `${exp.startDate} - Present`;
+            }
+
+            if (dateRange) {
+                html += `<div class="cv-item-dates">${dateRange}</div>`;
+            }
+
+            if (exp.description) {
+                html += `<div class="cv-item-description">${exp.description}</div>`;
+            }
+
+            html += `</div>`;
         });
-        html += '</div>';
+        html += `</div>`; // Close experience section
     }
 
+    // Education section - exact PDF format
     if (education.length > 0) {
         html += `
-            <div class="section">
-                <h2>Educación</h2>
+            <div class="cv-section">
+                <div class="cv-section-title">EDUCATION</div>
         `;
         education.forEach(edu => {
             html += `
-                <div class="education-item">
-                    <div class="item-title">${edu.degree} - ${edu.institution}</div>
-                    <div class="item-subtitle">${edu.startDate} - ${edu.endDate || 'Presente'}</div>
-                    ${edu.description ? `<div class="item-description">${edu.description}</div>` : ''}
-                </div>
+                <div class="cv-item">
+                    <div class="cv-item-title">${edu.degree} - ${edu.institution}</div>
             `;
+
+            // Date formatting exactly like PDF
+            let dateRange = '';
+            if (edu.startDate && edu.endDate) {
+                dateRange = `${edu.startDate} - ${edu.endDate}`;
+            } else if (edu.startDate) {
+                dateRange = `${edu.startDate} - Present`;
+            }
+
+            if (dateRange) {
+                html += `<div class="cv-item-dates">${dateRange}</div>`;
+            }
+
+            if (edu.description) {
+                html += `<div class="cv-item-description">${edu.description}</div>`;
+            }
+
+            html += `</div>`;
         });
-        html += '</div>';
+        html += `</div>`; // Close education section
     }
 
+    // Skills section - exact PDF format
     if (skills.length > 0) {
         html += `
-            <div class="section">
-                <h2>Habilidades</h2>
-                <div class="skills-list">
+            <div class="cv-section">
+                <div class="cv-section-title">SKILLS</div>
         `;
         const skillTexts = skills.map(skill =>
             skill.level ? `${skill.name} (${skill.level})` : skill.name
         );
-        html += skillTexts.join(' • ');
-        html += '</div></div>';
+        html += `<div class="cv-list-content">${skillTexts.join(' • ')}</div>`;
+        html += `</div>`; // Close skills section
     }
 
+    // Languages section - exact PDF format
     if (languages.length > 0) {
         html += `
-            <div class="section">
-                <h2>Idiomas</h2>
-                <div class="languages-list">${languages.join(' • ')}</div>
+            <div class="cv-section">
+                <div class="cv-section-title">LANGUAGES</div>
+                <div class="cv-list-content">${languages.join(' • ')}</div>
             </div>
         `;
     }
 
-    html += '</div>';
+    html += `</div></div>`; // Close cv-preview and cv-preview-container
     previewContent.innerHTML = html;
 }
 
