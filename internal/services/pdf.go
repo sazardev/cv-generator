@@ -2,190 +2,327 @@ package services
 
 import (
 	"bytes"
-	"html/template"
+	"fmt"
 	"log"
-	"path/filepath"
 	"strings"
 
 	"cv-generator/internal/models"
 
-	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
+	"github.com/jung-kurt/gofpdf"
 )
 
-type PDFService struct {
-	template *template.Template
-}
+type PDFService struct{}
 
 func NewPDFService() *PDFService {
-	log.Println("🔧 Initializing PDF service...")
-
-	// Load CV template
-	tmplPath := filepath.Join("web", "templates", "cv_template.html")
-	log.Printf("📄 Loading template from: %s", tmplPath)
-
-	tmpl, err := template.ParseFiles(tmplPath)
-	if err != nil {
-		log.Printf("⚠️ Template file not found, using embedded template: %v", err)
-		// Fallback to embedded template if file not found
-		tmpl = template.Must(template.New("cv").Parse(getEmbeddedTemplate()))
-	} else {
-		log.Println("✅ Template loaded successfully from file")
-	}
-
-	log.Println("✅ PDF service initialized")
-	return &PDFService{
-		template: tmpl,
-	}
+	log.Println("🔧 Initializing PDF service with gofpdf...")
+	log.Println("✅ PDF service initialized - no external dependencies required!")
+	return &PDFService{}
 }
 
 func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
-	log.Println("🎨 Generating HTML from template...")
+	log.Println("🎨 Generating PDF with gofpdf...")
 
-	// Generate HTML from template
-	var htmlBuffer bytes.Buffer
-	err := s.template.Execute(&htmlBuffer, cv)
+	// Create new PDF document
+	pdf := gofpdf.New("P", "mm", "A4", "")
+
+	// Set margins
+	pdf.SetMargins(25, 25, 25)
+	pdf.SetAutoPageBreak(true, 25)
+
+	// Add first page
+	pdf.AddPage()
+
+	// Define colors (monochromatic theme)
+	textColor := map[string]int{"r": 55, "g": 53, "b": 47}         // #37352f
+	lightTextColor := map[string]int{"r": 111, "g": 111, "b": 111} // #6f6f6f
+	separatorColor := map[string]int{"r": 227, "g": 226, "b": 224} // #e3e2e0
+
+	// Header - Name
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+	pdf.SetFont("Arial", "B", 18)
+	pdf.CellFormat(0, 12, cv.PersonalInfo.FullName, "", 1, "L", false, 0, "")
+	pdf.Ln(3)
+
+	// Contact Information
+	pdf.SetFont("Arial", "", 9)
+	pdf.SetTextColor(lightTextColor["r"], lightTextColor["g"], lightTextColor["b"])
+
+	var contactParts []string
+	if cv.PersonalInfo.Email != "" {
+		contactParts = append(contactParts, cv.PersonalInfo.Email)
+	}
+	if cv.PersonalInfo.Phone != "" {
+		contactParts = append(contactParts, cv.PersonalInfo.Phone)
+	}
+	if cv.PersonalInfo.Location != "" {
+		contactParts = append(contactParts, cv.PersonalInfo.Location)
+	}
+	if cv.PersonalInfo.LinkedIn != "" {
+		contactParts = append(contactParts, "LinkedIn: "+cv.PersonalInfo.LinkedIn)
+	}
+	if cv.PersonalInfo.GitHub != "" {
+		contactParts = append(contactParts, "GitHub: "+cv.PersonalInfo.GitHub)
+	}
+	if cv.PersonalInfo.Website != "" {
+		contactParts = append(contactParts, cv.PersonalInfo.Website)
+	}
+
+	if len(contactParts) > 0 {
+		contactInfo := strings.Join(contactParts, " • ")
+		// Split long contact info into multiple lines if needed
+		lines := s.splitText(pdf, contactInfo, 160)
+		for _, line := range lines {
+			pdf.CellFormat(0, 5, line, "", 1, "L", false, 0, "")
+		}
+	}
+
+	pdf.Ln(5)
+
+	// Add separator line
+	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
+	pdf.Line(25, pdf.GetY(), 185, pdf.GetY())
+	pdf.Ln(8)
+
+	// Summary Section
+	if cv.PersonalInfo.Summary != "" {
+		s.addSection(pdf, "SUMMARY", cv.PersonalInfo.Summary, textColor, lightTextColor, separatorColor)
+	}
+
+	// Experience Section
+	if len(cv.Experience) > 0 {
+		s.addExperienceSection(pdf, cv.Experience, textColor, lightTextColor, separatorColor)
+	}
+
+	// Education Section
+	if len(cv.Education) > 0 {
+		s.addEducationSection(pdf, cv.Education, textColor, lightTextColor, separatorColor)
+	}
+
+	// Skills Section
+	if len(cv.Skills) > 0 {
+		s.addSkillsSection(pdf, cv.Skills, textColor, lightTextColor, separatorColor)
+	}
+
+	// Languages Section
+	if len(cv.Languages) > 0 {
+		s.addLanguagesSection(pdf, cv.Languages, textColor, lightTextColor, separatorColor)
+	}
+
+	// Generate PDF bytes
+	buffer := &bytes.Buffer{}
+	err := pdf.Output(buffer)
 	if err != nil {
-		log.Printf("❌ Template execution failed: %v", err)
+		log.Printf("❌ PDF generation failed: %v", err)
 		return nil, err
 	}
 
-	htmlContent := htmlBuffer.String()
-	log.Printf("✅ HTML generated successfully, length: %d characters", len(htmlContent))
+	buf := buffer.Bytes()
+	log.Printf("✅ PDF generated successfully, size: %d bytes", len(buf))
 
-	// Show a preview of the HTML (safely)
-	previewLength := 500
-	if len(htmlContent) < previewLength {
-		previewLength = len(htmlContent)
-	}
-	log.Printf("📋 HTML preview (first %d chars): %s...", previewLength, htmlContent[:previewLength])
-
-	// Create PDF from HTML using wkhtmltopdf
-	log.Println("🔧 Initializing wkhtmltopdf...")
-
-	// Set the path to wkhtmltopdf executable
-	wkhtmltopdf.SetPath("C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe")
-	log.Println("✅ wkhtmltopdf path configured")
-
-	pdfg, err := wkhtmltopdf.NewPDFGenerator()
-	if err != nil {
-		log.Printf("❌ Failed to create PDF generator: %v", err)
-		return nil, err
-	}
-	log.Println("✅ PDF generator created")
-
-	// Configure PDF options for professional output
-	log.Println("⚙️ Configuring PDF options...")
-	pdfg.Dpi.Set(300)
-	pdfg.Orientation.Set(wkhtmltopdf.OrientationPortrait)
-	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
-	// Set proper margins to ensure consistent spacing across pages
-	pdfg.MarginTop.Set(25)    // 25mm top margin
-	pdfg.MarginBottom.Set(25) // 25mm bottom margin
-	pdfg.MarginLeft.Set(25)   // 25mm left margin
-	pdfg.MarginRight.Set(25)  // 25mm right margin
-	log.Println("✅ PDF options configured")
-
-	// Add the HTML page
-	log.Println("📄 Adding HTML page to PDF generator...")
-	page := wkhtmltopdf.NewPageReader(strings.NewReader(htmlContent))
-	page.DisableSmartShrinking.Set(true)
-	page.EnableLocalFileAccess.Set(true)
-	page.LoadErrorHandling.Set("ignore")
-	// Additional page options for better multi-page rendering
-	page.PrintMediaType.Set(true)
-	page.NoBackground.Set(false)
-	page.MinimumFontSize.Set(0)
-	pdfg.AddPage(page)
-	log.Println("✅ HTML page added")
-
-	// Generate PDF
-	log.Println("🎯 Creating PDF...")
-	err = pdfg.Create()
-	if err != nil {
-		log.Printf("❌ PDF creation failed: %v", err)
-		return nil, err
-	}
-	log.Println("✅ PDF created successfully")
-
-	pdfBytes := pdfg.Bytes()
-	log.Printf("✅ PDF generation completed, size: %d bytes", len(pdfBytes))
-
-	return pdfBytes, nil
+	return buf, nil
 }
 
-// Fallback embedded template
-func getEmbeddedTemplate() string {
-	return `<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        @page { size: A4; margin: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            color: #37352f;
-            line-height: 1.6;
-            font-size: 11pt;
-            background: white;
-            margin: 0;
-            padding: 0;
-        }
-        .name { 
-            font-size: 24pt; 
-            font-weight: 700; 
-            margin-bottom: 10pt; 
-            page-break-after: avoid;
-        }
-        .contact-info { 
-            font-size: 9pt; 
-            color: #6f6f6f; 
-            margin-bottom: 20pt; 
-        }
-        .section { 
-            margin-bottom: 20pt; 
-            page-break-inside: avoid;
-            orphans: 2;
-            widows: 2;
-        }
-        .section-title { 
-            font-size: 11pt; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            margin-bottom: 10pt;
-            border-bottom: 1pt solid #e3e2e0;
-            padding-bottom: 4pt;
-            page-break-after: avoid;
-        }
-        .item { 
-            margin-bottom: 12pt; 
-            page-break-inside: avoid;
-            orphans: 2;
-            widows: 2;
-        }
-        .item-title { 
-            font-weight: 600; 
-            margin-bottom: 3pt; 
-            page-break-after: avoid;
-        }
-        .item-subtitle { 
-            font-size: 9pt; 
-            color: #6f6f6f; 
-            font-style: italic; 
-        }
-    </style>
-</head>
-<body>
-    <h1 class="name">{{.PersonalInfo.FullName}}</h1>
-    <div class="contact-info">
-        {{.PersonalInfo.Email}}{{if .PersonalInfo.Phone}} • {{.PersonalInfo.Phone}}{{end}}{{if .PersonalInfo.Location}} • {{.PersonalInfo.Location}}{{end}}
-    </div>
-    {{if .PersonalInfo.Summary}}
-    <div class="section">
-        <h2 class="section-title">Summary</h2>
-        <p>{{.PersonalInfo.Summary}}</p>
-    </div>
-    {{end}}
-</body>
-</html>`
+func (s *PDFService) addSection(pdf *gofpdf.Fpdf, title, content string, textColor, lightTextColor, separatorColor map[string]int) {
+	// Section title
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(0, 6, title, "", 1, "L", false, 0, "")
+
+	// Section separator
+	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
+	pdf.Line(25, pdf.GetY(), 185, pdf.GetY())
+	pdf.Ln(3)
+
+	// Section content
+	pdf.SetFont("Arial", "", 10)
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+
+	lines := s.splitText(pdf, content, 160)
+	for _, line := range lines {
+		pdf.CellFormat(0, 5, line, "", 1, "L", false, 0, "")
+	}
+	pdf.Ln(5)
+}
+
+func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, experiences []models.Experience, textColor, lightTextColor, separatorColor map[string]int) {
+	// Section title
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(0, 6, "EXPERIENCE", "", 1, "L", false, 0, "")
+
+	// Section separator
+	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
+	pdf.Line(25, pdf.GetY(), 185, pdf.GetY())
+	pdf.Ln(3)
+
+	for i, exp := range experiences {
+		// Item title
+		pdf.SetFont("Arial", "B", 10)
+		pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+		title := fmt.Sprintf("%s at %s", exp.Position, exp.Company)
+		pdf.CellFormat(0, 5, title, "", 1, "L", false, 0, "")
+
+		// Item subtitle (dates)
+		pdf.SetFont("Arial", "I", 9)
+		pdf.SetTextColor(lightTextColor["r"], lightTextColor["g"], lightTextColor["b"])
+		dateRange := exp.StartDate
+		if exp.EndDate != "" {
+			dateRange += " - " + exp.EndDate
+		} else {
+			dateRange += " - Present"
+		}
+		pdf.CellFormat(0, 4, dateRange, "", 1, "L", false, 0, "")
+
+		// Description
+		if exp.Description != "" {
+			pdf.SetFont("Arial", "", 10)
+			pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+			lines := s.splitText(pdf, exp.Description, 160)
+			for _, line := range lines {
+				pdf.CellFormat(0, 4, line, "", 1, "L", false, 0, "")
+			}
+		}
+
+		if i < len(experiences)-1 {
+			pdf.Ln(3)
+		}
+	}
+	pdf.Ln(5)
+}
+
+func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, education []models.Education, textColor, lightTextColor, separatorColor map[string]int) {
+	// Section title
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(0, 6, "EDUCATION", "", 1, "L", false, 0, "")
+
+	// Section separator
+	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
+	pdf.Line(25, pdf.GetY(), 185, pdf.GetY())
+	pdf.Ln(3)
+
+	for i, edu := range education {
+		// Item title
+		pdf.SetFont("Arial", "B", 10)
+		pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+		title := fmt.Sprintf("%s - %s", edu.Degree, edu.Institution)
+		pdf.CellFormat(0, 5, title, "", 1, "L", false, 0, "")
+
+		// Item subtitle (dates)
+		pdf.SetFont("Arial", "I", 9)
+		pdf.SetTextColor(lightTextColor["r"], lightTextColor["g"], lightTextColor["b"])
+		dateRange := edu.StartDate
+		if edu.EndDate != "" {
+			dateRange += " - " + edu.EndDate
+		} else {
+			dateRange += " - Present"
+		}
+		pdf.CellFormat(0, 4, dateRange, "", 1, "L", false, 0, "")
+
+		// Description
+		if edu.Description != "" {
+			pdf.SetFont("Arial", "", 10)
+			pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+			lines := s.splitText(pdf, edu.Description, 160)
+			for _, line := range lines {
+				pdf.CellFormat(0, 4, line, "", 1, "L", false, 0, "")
+			}
+		}
+
+		if i < len(education)-1 {
+			pdf.Ln(3)
+		}
+	}
+	pdf.Ln(5)
+}
+
+func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, skills []models.Skill, textColor, lightTextColor, separatorColor map[string]int) {
+	// Section title
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(0, 6, "SKILLS", "", 1, "L", false, 0, "")
+
+	// Section separator
+	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
+	pdf.Line(25, pdf.GetY(), 185, pdf.GetY())
+	pdf.Ln(3)
+
+	pdf.SetFont("Arial", "", 10)
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+
+	// Display skills in columns
+	x := 25.0
+	y := pdf.GetY()
+	colWidth := 80.0
+	lineHeight := 5.0
+
+	for i, skill := range skills {
+		if i > 0 && i%2 == 0 {
+			y += lineHeight
+			x = 25.0
+		} else if i > 0 {
+			x = 105.0
+		}
+
+		pdf.SetXY(x, y)
+
+		skillText := skill.Name
+		if skill.Level != "" {
+			skillText += " (" + skill.Level + ")"
+		}
+
+		pdf.CellFormat(colWidth, lineHeight, skillText, "", 0, "L", false, 0, "")
+	}
+
+	pdf.SetXY(25, y+lineHeight+5)
+}
+
+func (s *PDFService) addLanguagesSection(pdf *gofpdf.Fpdf, languages []string, textColor, lightTextColor, separatorColor map[string]int) {
+	// Section title
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(0, 6, "LANGUAGES", "", 1, "L", false, 0, "")
+
+	// Section separator
+	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
+	pdf.Line(25, pdf.GetY(), 185, pdf.GetY())
+	pdf.Ln(3)
+
+	pdf.SetFont("Arial", "", 10)
+	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
+
+	languageText := strings.Join(languages, " • ")
+	lines := s.splitText(pdf, languageText, 160)
+	for _, line := range lines {
+		pdf.CellFormat(0, 5, line, "", 1, "L", false, 0, "")
+	}
+	pdf.Ln(5)
+}
+
+func (s *PDFService) splitText(pdf *gofpdf.Fpdf, text string, maxWidth float64) []string {
+	words := strings.Fields(text)
+	var lines []string
+	var currentLine []string
+
+	for _, word := range words {
+		testLine := append(currentLine, word)
+		testText := strings.Join(testLine, " ")
+
+		textWidth := pdf.GetStringWidth(testText)
+
+		if textWidth <= maxWidth {
+			currentLine = testLine
+		} else {
+			if len(currentLine) > 0 {
+				lines = append(lines, strings.Join(currentLine, " "))
+			}
+			currentLine = []string{word}
+		}
+	}
+
+	if len(currentLine) > 0 {
+		lines = append(lines, strings.Join(currentLine, " "))
+	}
+
+	return lines
 }

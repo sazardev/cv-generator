@@ -110,7 +110,7 @@ func (h *CVHandler) GeneratePDF(c *fiber.Ctx) error {
 	log.Printf("✅ CV struct created: %+v", cv)
 
 	// Generate PDF
-	log.Println("📄 Starting PDF generation with wkhtmltopdf...")
+	log.Println("📄 Starting PDF generation with native Go (gofpdf)...")
 	pdfBytes, err := h.pdfService.GenerateCV(cv)
 	if err != nil {
 		log.Printf("❌ PDF generation failed: %v", err)
