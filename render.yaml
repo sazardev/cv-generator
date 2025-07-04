@@ -1,0 +1,3 @@
+# Render deployment configuration
+buildCommand: go build -o bin/main ./cmd/server
+startCommand: ./bin/main

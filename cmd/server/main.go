@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"cv-generator/internal/config"
 	"cv-generator/internal/handlers"
@@ -19,7 +20,13 @@ func main() {
 
 	// Create template engine
 	engine := html.New("./web/templates", ".html")
-	engine.Reload(true) // Enable auto-reload in development
+
+	// Disable reload in production, enable in development
+	if os.Getenv("RENDER") != "" {
+		engine.Reload(false) // Production mode
+	} else {
+		engine.Reload(true) // Development mode
+	}
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -47,8 +54,10 @@ func main() {
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status": "ok",
-			"app":    "CV Generator",
+			"status":  "ok",
+			"app":     "CV Generator",
+			"version": "1.0.0",
+			"uptime":  "running",
 		})
 	})
 

@@ -156,3 +156,75 @@ El generador de CV soporta completamente inglés y español:
 3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
 4. Push al branch (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
+
+## 🚀 Despliegue en Producción
+
+### Render (Recomendado)
+
+Render es una plataforma moderna que facilita el despliegue de aplicaciones Go:
+
+#### Preparación
+
+1. **Crea una cuenta en [Render](https://render.com)**
+
+2. **Conecta tu repositorio de GitHub**
+
+3. **Configura el servicio web:**
+   - **Build Command**: `go build -o bin/main ./cmd/server`
+   - **Start Command**: `./bin/main`
+   - **Environment**: Go
+   - **Plan**: Free (para empezar)
+
+#### Variables de Entorno
+
+No necesitas configurar variables especiales, la aplicación ya está optimizada para Render:
+
+- `PORT`: Se configura automáticamente por Render
+- Sin dependencias externas requeridas
+
+#### Configuración Automática
+
+La aplicación incluye:
+- ✅ `Dockerfile` optimizado para producción
+- ✅ Scripts de build y start configurados
+- ✅ Health check endpoint en `/health`
+- ✅ Configuración de puerto dinámico
+- ✅ Archivos estáticos servidos correctamente
+
+#### Pasos de Despliegue
+
+1. **Sube tu código a GitHub**
+2. **Crea un nuevo Web Service en Render**
+3. **Conecta tu repositorio**
+4. **Render detectará automáticamente que es una aplicación Go**
+5. **¡Despliega!**
+
+Tu aplicación estará disponible en: `https://tu-app-name.onrender.com`
+
+### Otras Plataformas
+
+#### Railway
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login y deploy
+railway login
+railway init
+railway up
+```
+
+#### Heroku
+```bash
+# Crear Procfile
+echo "web: ./bin/main" > Procfile
+
+# Deploy
+heroku create tu-app-name
+git push heroku main
+```
+
+#### DigitalOcean App Platform
+1. Conectar repositorio
+2. Configurar: `go build -o bin/main ./cmd/server`
+3. Start: `./bin/main`
