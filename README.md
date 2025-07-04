@@ -10,8 +10,12 @@ Un generador de CV minimalista y monocromático con diseño estilo Notion, desar
 - 📄 **Exportación PDF Nativa**: Genera PDFs con Go puro, sin dependencias externas
 - ⚡ **Completamente Portátil**: Solo necesitas Go - no requiere instalaciones adicionales
 - 🌍 **Soporte UTF-8 Completo**: Maneja acentos, ñ y caracteres especiales correctamente
-- 🔧 **Sin Dependencias Externas**: No requiere wkhtmltopdf ni otros ejecutables
+- �️ **Selector de Idioma**: Cambia entre inglés y español en tiempo real
+- 🔄 **Traducción Automática**: Headers y niveles de habilidad se traducen según el idioma seleccionado
+- �🔧 **Sin Dependencias Externas**: No requiere wkhtmltopdf ni otros ejecutables
 - 📋 **Formularios Dinámicos**: Agrega/elimina experiencias, educación, habilidades dinámicamente
+- 🏷️ **SEO Optimizado**: Meta tags, Open Graph, y structured data
+- 🎯 **Favicon SVG**: Icono minimalista y vectorial
 
 ## Tecnologías
 
@@ -42,13 +46,14 @@ Abre tu navegador en `http://localhost:3000`
 
 ## 📋 Uso
 
-1. **Completa tu información personal**: Nombre, email, teléfono, enlaces profesionales
-2. **Agrega tu experiencia**: Empresas, cargos, fechas y descripciones
-3. **Incluye tu educación**: Títulos, instituciones y logros
-4. **Lista tus habilidades**: Con niveles opcionales de competencia
-5. **Especifica idiomas**: Idiomas que hablas y tu nivel
-6. **Vista previa**: Revisa cómo se ve tu CV
-7. **Exporta**: Descarga tu PDF profesional
+1. **Selecciona tu idioma**: Usa el selector en la esquina superior derecha (🇪🇸/🇺🇸)
+2. **Completa tu información personal**: Nombre, email, teléfono, enlaces profesionales
+3. **Agrega tu experiencia**: Empresas, cargos, fechas y descripciones
+4. **Incluye tu educación**: Títulos, instituciones y logros
+5. **Lista tus habilidades**: Con niveles opcionales de competencia (Básico, Intermedio, Avanzado, Experto)
+6. **Especifica idiomas**: Idiomas que hablas y tu nivel
+7. **Vista previa**: Revisa cómo se ve tu CV
+8. **Exporta**: Descarga tu PDF profesional con traducción automática según el idioma seleccionado
 
 ## 🎨 Diseño
 
@@ -127,6 +132,22 @@ cv-generator/
 - **PDF Generation**: gofpdf (librería nativa de Go)
 - **Codificación**: UTF-8 completo con corrección automática de caracteres mal codificados
 - **Styling**: CSS personalizado inspirado en Notion
+
+## 🌍 Internacionalización
+
+El generador de CV soporta completamente inglés y español:
+
+### Traducción Automática
+- **Headers de secciones**: EXPERIENCE/EXPERIENCIA, EDUCATION/EDUCACIÓN, SKILLS/HABILIDADES, etc.
+- **Niveles de habilidad**: Basic/Básico, Intermediate/Intermedio, Advanced/Avanzado, Expert/Experto
+- **Palabras comunes**: Present/Presente, at/en
+
+### Funcionalidades i18n
+- ✅ Selector de idioma en tiempo real en la interfaz
+- ✅ El idioma seleccionado se aplica automáticamente al PDF generado
+- ✅ Soporte completo para caracteres UTF-8 (acentos, ñ, etc.)
+- ✅ Traducción bidireccional: español ↔ inglés
+- ✅ Fallback inteligente si no se encuentra traducción
 
 ## Contribuir
 

@@ -13,6 +13,83 @@ import (
 
 type PDFService struct{}
 
+// Translation maps for different languages
+var translations = map[string]map[string]string{
+	"en": {
+		// Section headers
+		"SUMMARY":    "SUMMARY",
+		"EXPERIENCE": "EXPERIENCE",
+		"EDUCATION":  "EDUCATION",
+		"SKILLS":     "SKILLS",
+		"LANGUAGES":  "LANGUAGES",
+		// Common words
+		"Present": "Present",
+		"at":      "at",
+		// Skill levels - from Spanish to English
+		"Básico":     "Basic",
+		"básico":     "Basic",
+		"Intermedio": "Intermediate",
+		"intermedio": "Intermediate",
+		"Avanzado":   "Advanced",
+		"avanzado":   "Advanced",
+		"Experto":    "Expert",
+		"experto":    "Expert",
+		// Already English skill levels (no translation needed)
+		"Basic":        "Basic",
+		"basic":        "Basic",
+		"Intermediate": "Intermediate",
+		"intermediate": "Intermediate",
+		"Advanced":     "Advanced",
+		"advanced":     "Advanced",
+		"Expert":       "Expert",
+		"expert":       "Expert",
+	},
+	"es": {
+		// Section headers
+		"SUMMARY":    "RESUMEN",
+		"EXPERIENCE": "EXPERIENCIA",
+		"EDUCATION":  "EDUCACIÓN",
+		"SKILLS":     "HABILIDADES",
+		"LANGUAGES":  "IDIOMAS",
+		// Common words
+		"Present": "Presente",
+		"at":      "en",
+		// Skill levels - from English to Spanish
+		"Basic":        "Básico",
+		"basic":        "Básico",
+		"Intermediate": "Intermedio",
+		"intermediate": "Intermedio",
+		"Advanced":     "Avanzado",
+		"advanced":     "Avanzado",
+		"Expert":       "Experto",
+		"expert":       "Experto",
+		// Already Spanish skill levels (no translation needed)
+		"Básico":     "Básico",
+		"básico":     "Básico",
+		"Intermedio": "Intermedio",
+		"intermedio": "Intermedio",
+		"Avanzado":   "Avanzado",
+		"avanzado":   "Avanzado",
+		"Experto":    "Experto",
+		"experto":    "experto",
+	},
+}
+
+// translate converts text based on the target language
+func (s *PDFService) translate(text, targetLang string) string {
+	if targetLang == "" {
+		targetLang = "en" // default to English
+	}
+
+	if langMap, exists := translations[targetLang]; exists {
+		if translated, exists := langMap[text]; exists {
+			return translated
+		}
+	}
+
+	return text // fallback to original text if no translation found
+}
+
 func NewPDFService() *PDFService {
 	log.Println("🔧 Initializing PDF service with gofpdf...")
 	log.Println("✅ PDF service initialized - no external dependencies required!")
@@ -57,6 +134,8 @@ func (s *PDFService) cleanText(text string) string {
 
 func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 	log.Println("🎨 Generating PDF with gofpdf...")
+	log.Printf("🌐 PDF Language: %s", cv.Language)
+	log.Printf("📋 CV Language Field: '%s' (length: %d)", cv.Language, len(cv.Language))
 
 	// Create new PDF document with better UTF-8 handling
 	pdf := gofpdf.New("P", "mm", "A4", "")
@@ -125,27 +204,27 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 
 	// Summary Section
 	if cv.PersonalInfo.Summary != "" {
-		s.addSection(pdf, tr, "RESUMEN", s.cleanText(cv.PersonalInfo.Summary), textColor, lightTextColor, separatorColor)
+		s.addSection(pdf, tr, s.translate("SUMMARY", cv.Language), s.cleanText(cv.PersonalInfo.Summary), textColor, lightTextColor, separatorColor)
 	}
 
 	// Experience Section
 	if len(cv.Experience) > 0 {
-		s.addExperienceSection(pdf, tr, cv.Experience, textColor, lightTextColor, separatorColor)
+		s.addExperienceSection(pdf, tr, cv.Experience, cv.Language, textColor, lightTextColor, separatorColor)
 	}
 
 	// Education Section
 	if len(cv.Education) > 0 {
-		s.addEducationSection(pdf, tr, cv.Education, textColor, lightTextColor, separatorColor)
+		s.addEducationSection(pdf, tr, cv.Education, cv.Language, textColor, lightTextColor, separatorColor)
 	}
 
 	// Skills Section
 	if len(cv.Skills) > 0 {
-		s.addSkillsSection(pdf, tr, cv.Skills, textColor, lightTextColor, separatorColor)
+		s.addSkillsSection(pdf, tr, cv.Skills, cv.Language, textColor, lightTextColor, separatorColor)
 	}
 
 	// Languages Section
 	if len(cv.Languages) > 0 {
-		s.addLanguagesSection(pdf, tr, cv.Languages, textColor, lightTextColor, separatorColor)
+		s.addLanguagesSection(pdf, tr, cv.Languages, cv.Language, textColor, lightTextColor, separatorColor)
 	}
 
 	// Generate PDF bytes
@@ -184,11 +263,11 @@ func (s *PDFService) addSection(pdf *gofpdf.Fpdf, tr func(string) string, title,
 	pdf.Ln(5)
 }
 
-func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, tr func(string) string, experiences []models.Experience, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, tr func(string) string, experiences []models.Experience, lang string, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, tr("EXPERIENCIA"), "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr(s.translate("EXPERIENCE", lang)), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -199,7 +278,8 @@ func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, tr func(string) stri
 		// Item title
 		pdf.SetFont("Arial", "B", 10)
 		pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
-		title := fmt.Sprintf("%s en %s", tr(s.cleanText(exp.Position)), tr(s.cleanText(exp.Company)))
+		atWord := s.translate("at", lang)
+		title := fmt.Sprintf("%s %s %s", tr(s.cleanText(exp.Position)), atWord, tr(s.cleanText(exp.Company)))
 		pdf.CellFormat(0, 5, title, "", 1, "L", false, 0, "")
 
 		// Item subtitle (dates)
@@ -209,7 +289,7 @@ func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, tr func(string) stri
 		if exp.EndDate != "" {
 			dateRange += " - " + tr(s.cleanText(exp.EndDate))
 		} else {
-			dateRange += " - " + tr("Presente")
+			dateRange += " - " + tr(s.translate("Present", lang))
 		}
 		pdf.CellFormat(0, 4, dateRange, "", 1, "L", false, 0, "")
 
@@ -230,11 +310,11 @@ func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, tr func(string) stri
 	pdf.Ln(5)
 }
 
-func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, tr func(string) string, education []models.Education, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, tr func(string) string, education []models.Education, lang string, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, tr("EDUCACIÓN"), "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr(s.translate("EDUCATION", lang)), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -255,7 +335,7 @@ func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, tr func(string) strin
 		if edu.EndDate != "" {
 			dateRange += " - " + tr(s.cleanText(edu.EndDate))
 		} else {
-			dateRange += " - " + tr("Presente")
+			dateRange += " - " + tr(s.translate("Present", lang))
 		}
 		pdf.CellFormat(0, 4, dateRange, "", 1, "L", false, 0, "")
 
@@ -276,11 +356,11 @@ func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, tr func(string) strin
 	pdf.Ln(5)
 }
 
-func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, tr func(string) string, skills []models.Skill, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, tr func(string) string, skills []models.Skill, lang string, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, tr("HABILIDADES"), "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr(s.translate("SKILLS", lang)), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -308,7 +388,9 @@ func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, tr func(string) string, 
 
 		skillText := tr(s.cleanText(skill.Name))
 		if skill.Level != "" {
-			skillText += " (" + tr(s.cleanText(skill.Level)) + ")"
+			// Translate the skill level based on the target language
+			translatedLevel := s.translate(s.cleanText(skill.Level), lang)
+			skillText += " (" + tr(translatedLevel) + ")"
 		}
 
 		pdf.CellFormat(colWidth, lineHeight, skillText, "", 0, "L", false, 0, "")
@@ -317,11 +399,11 @@ func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, tr func(string) string, 
 	pdf.SetXY(25, y+lineHeight+5)
 }
 
-func (s *PDFService) addLanguagesSection(pdf *gofpdf.Fpdf, tr func(string) string, languages []string, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addLanguagesSection(pdf *gofpdf.Fpdf, tr func(string) string, languages []string, lang string, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, tr("IDIOMAS"), "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr(s.translate("LANGUAGES", lang)), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
