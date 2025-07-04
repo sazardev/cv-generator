@@ -1,13 +1,61 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}}</title>
+    <meta name="description"
+        content="Generador de CV profesional minimalista. Crea currículums elegantes en formato PDF con diseño monocromático estilo Notion. Gratis y fácil de usar.">
+    <meta name="keywords"
+        content="generador cv, curriculum vitae, pdf gratis, plantilla cv, cv profesional, curriculum online, cv minimalista">
+    <meta name="author" content="CV Generator">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{.BaseURL}}">
+    <meta property="og:title" content="{{.Title}} - Generador de CV Profesional">
+    <meta property="og:description"
+        content="Crea currículums profesionales con diseño minimalista estilo Notion. Exporta a PDF de alta calidad de forma gratuita.">
+    <meta property="og:image" content="{{.BaseURL}}/static/favicon.svg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{.BaseURL}}">
+    <meta property="twitter:title" content="{{.Title}} - Generador de CV Profesional">
+    <meta property="twitter:description"
+        content="Crea currículums profesionales con diseño minimalista estilo Notion. Exporta a PDF de alta calidad de forma gratuita.">
+    <meta property="twitter:image" content="{{.BaseURL}}/static/favicon.svg">
+
+    <title>{{.Title}} - Generador de CV Profesional Minimalista</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="alternate icon" href="/static/favicon.svg">
+    <link rel="mask-icon" href="/static/favicon.svg" color="#37352f">
+
+    <!-- Styles -->
     <link rel="stylesheet" href="/static/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "CV Generator",
+        "description": "Generador de CV profesional minimalista con exportación a PDF",
+        "url": "{{.BaseURL}}",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        }
+    }
+    </script>
 </head>
 
 <body>
@@ -17,16 +65,23 @@
             <div class="container">
                 <h1 class="logo">
                     <i class="fas fa-file-alt"></i>
-                    CV Generator
+                    <span data-i18n="app.title">CV Generator</span>
                 </h1>
                 <div class="header-actions">
+                    <!-- Language Selector -->
+                    <div class="language-selector">
+                        <select id="language-select" class="btn btn-ghost" onchange="changeLanguage(this.value)">
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="en">🇺🇸 English</option>
+                        </select>
+                    </div>
                     <button type="button" class="btn btn-secondary" onclick="previewCV()">
                         <i class="fas fa-eye"></i>
-                        Vista Previa
+                        <span data-i18n="actions.preview">Vista Previa</span>
                     </button>
                     <button type="submit" form="cv-form" class="btn btn-primary">
                         <i class="fas fa-download"></i>
-                        Exportar PDF
+                        <span data-i18n="actions.export">Exportar PDF</span>
                     </button>
                 </div>
             </div>
@@ -41,45 +96,52 @@
                         <div class="section-header">
                             <h2 class="section-title">
                                 <i class="fas fa-user"></i>
-                                Información Personal
+                                <span data-i18n="sections.personal">Información Personal</span>
                             </h2>
                         </div>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="fullName">Nombre Completo *</label>
+                                <label for="fullName" data-i18n="fields.fullName">Nombre Completo *</label>
                                 <input type="text" id="fullName" name="fullName" required
-                                    placeholder="Tu nombre completo">
+                                    data-i18n-placeholder="placeholders.fullName" placeholder="Tu nombre completo">
                             </div>
                             <div class="form-group">
-                                <label for="email">Email *</label>
-                                <input type="email" id="email" name="email" required placeholder="tu@email.com">
+                                <label for="email" data-i18n="fields.email">Email *</label>
+                                <input type="email" id="email" name="email" required
+                                    data-i18n-placeholder="placeholders.email" placeholder="tu@email.com">
                             </div>
                             <div class="form-group">
-                                <label for="phone">Teléfono</label>
-                                <input type="tel" id="phone" name="phone" placeholder="+1 234 567 8900">
+                                <label for="phone" data-i18n="fields.phone">Teléfono</label>
+                                <input type="tel" id="phone" name="phone" data-i18n-placeholder="placeholders.phone"
+                                    placeholder="+1 234 567 8900">
                             </div>
                             <div class="form-group">
-                                <label for="location">Ubicación</label>
-                                <input type="text" id="location" name="location" placeholder="Ciudad, País">
+                                <label for="location" data-i18n="fields.location">Ubicación</label>
+                                <input type="text" id="location" name="location"
+                                    data-i18n-placeholder="placeholders.location" placeholder="Ciudad, País">
                             </div>
                             <div class="form-group">
-                                <label for="linkedin">LinkedIn</label>
+                                <label for="linkedin" data-i18n="fields.linkedin">LinkedIn</label>
                                 <input type="url" id="linkedin" name="linkedin"
+                                    data-i18n-placeholder="placeholders.linkedin"
                                     placeholder="https://linkedin.com/in/tu-perfil">
                             </div>
                             <div class="form-group">
-                                <label for="github">GitHub</label>
-                                <input type="url" id="github" name="github" placeholder="https://github.com/tu-usuario">
+                                <label for="github" data-i18n="fields.github">GitHub</label>
+                                <input type="url" id="github" name="github" data-i18n-placeholder="placeholders.github"
+                                    placeholder="https://github.com/tu-usuario">
                             </div>
                             <div class="form-group">
-                                <label for="website">Sitio Web</label>
-                                <input type="url" id="website" name="website" placeholder="https://tu-sitio.com">
+                                <label for="website" data-i18n="fields.website">Sitio Web</label>
+                                <input type="url" id="website" name="website"
+                                    data-i18n-placeholder="placeholders.website" placeholder="https://tu-sitio.com">
                             </div>
                         </div>
                         <div class="form-grid">
                             <div class="form-group full-width">
-                                <label for="summary">Resumen Profesional</label>
+                                <label for="summary" data-i18n="fields.summary">Resumen Profesional</label>
                                 <textarea id="summary" name="summary" rows="4"
+                                    data-i18n-placeholder="placeholders.summary"
                                     placeholder="Describe brevemente tu experiencia y objetivos profesionales..."></textarea>
                             </div>
                         </div>
@@ -90,11 +152,11 @@
                         <div class="section-header">
                             <h2 class="section-title">
                                 <i class="fas fa-briefcase"></i>
-                                Experiencia Laboral
+                                <span data-i18n="sections.experience">Experiencia Laboral</span>
                             </h2>
                             <button type="button" class="btn btn-ghost" onclick="addExperience()">
                                 <i class="fas fa-plus"></i>
-                                Agregar
+                                <span data-i18n="actions.add">Agregar</span>
                             </button>
                         </div>
                         <div id="experience-container">
@@ -107,11 +169,11 @@
                         <div class="section-header">
                             <h2 class="section-title">
                                 <i class="fas fa-graduation-cap"></i>
-                                Educación
+                                <span data-i18n="sections.education">Educación</span>
                             </h2>
                             <button type="button" class="btn btn-ghost" onclick="addEducation()">
                                 <i class="fas fa-plus"></i>
-                                Agregar
+                                <span data-i18n="actions.add">Agregar</span>
                             </button>
                         </div>
                         <div id="education-container">
@@ -124,11 +186,11 @@
                         <div class="section-header">
                             <h2 class="section-title">
                                 <i class="fas fa-cogs"></i>
-                                Habilidades
+                                <span data-i18n="sections.skills">Habilidades</span>
                             </h2>
                             <button type="button" class="btn btn-ghost" onclick="addSkill()">
                                 <i class="fas fa-plus"></i>
-                                Agregar
+                                <span data-i18n="actions.add">Agregar</span>
                             </button>
                         </div>
                         <div id="skills-container">
@@ -141,11 +203,11 @@
                         <div class="section-header">
                             <h2 class="section-title">
                                 <i class="fas fa-language"></i>
-                                Idiomas
+                                <span data-i18n="sections.languages">Idiomas</span>
                             </h2>
                             <button type="button" class="btn btn-ghost" onclick="addLanguage()">
                                 <i class="fas fa-plus"></i>
-                                Agregar
+                                <span data-i18n="actions.add">Agregar</span>
                             </button>
                         </div>
                         <div id="languages-container">
@@ -169,7 +231,7 @@
             <div class="modal-header">
                 <h3>
                     <i class="fas fa-eye"></i>
-                    Vista Previa del CV
+                    <span data-i18n="preview.title">Vista Previa del CV</span>
                 </h3>
                 <button type="button" class="modal-close" onclick="closePreview()">
                     <i class="fas fa-times"></i>
@@ -183,6 +245,8 @@
         </div>
     </div>
 
+    <!-- i18n script -->
+    <script src="/static/i18n.js"></script>
     <script src="/static/app.js"></script>
 </body>
 

@@ -667,3 +667,36 @@ select:focus {
         margin-bottom: 20px;
     }
 }
+
+/* Language Selector */
+.language-selector {
+    margin-right: 12px;
+}
+
+.language-selector select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-small);
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition);
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23666' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+    padding-right: 28px;
+}
+
+.language-selector select:hover {
+    border-color: var(--border-medium);
+    background-color: var(--bg-hover);
+}
+
+.language-selector select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(55, 53, 47, 0.1);
+}
