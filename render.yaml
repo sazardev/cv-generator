@@ -1,3 +1,13 @@
 # Render deployment configuration
-buildCommand: go build -o bin/main ./cmd/server
-startCommand: ./bin/main
+services:
+  - type: web
+    name: cv-generator
+    env: go
+    buildCommand: go build -o bin/main ./cmd/server
+    startCommand: ./bin/main
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: RENDER
+        value: true
