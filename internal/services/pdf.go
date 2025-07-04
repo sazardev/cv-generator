@@ -19,11 +19,50 @@ func NewPDFService() *PDFService {
 	return &PDFService{}
 }
 
+// cleanText ensures text is properly encoded for PDF and fixes common encoding issues
+func (s *PDFService) cleanText(text string) string {
+	// Convert common problematic characters from bad UTF-8 encoding
+	replacements := map[string]string{
+		"Ã¡":           "á",
+		"Ã©":           "é",
+		"Ã­":           "í",
+		"Ã³":           "ó",
+		"Ãº":           "ú",
+		"Ã±":           "ñ",
+		"BÃ¡sico":      "Básico",
+		"bÃ¡sico":      "básico",
+		"BÃ sico":      "Básico",
+		"bÃ sico":      "básico",
+		"Basico":       "Básico",
+		"basico":       "básico",
+		"intermedio":   "Intermedio",
+		"avanzado":     "Avanzado",
+		"experto":      "Experto",
+		"EducaciÃ³n":   "Educación",
+		"ExperiÃ©ncia": "Experiencia",
+		"HabilidÃ¡des": "Habilidades",
+	}
+
+	result := text
+	for bad, good := range replacements {
+		result = strings.ReplaceAll(result, bad, good)
+	}
+
+	// Remove any remaining null bytes or invalid characters
+	result = strings.ReplaceAll(result, "\x00", "")
+	result = strings.TrimSpace(result)
+
+	return result
+}
+
 func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 	log.Println("🎨 Generating PDF with gofpdf...")
 
-	// Create new PDF document
+	// Create new PDF document with better UTF-8 handling
 	pdf := gofpdf.New("P", "mm", "A4", "")
+
+	// Configure translator to handle non-ASCII characters
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
 
 	// Set margins
 	pdf.SetMargins(25, 25, 25)
@@ -40,7 +79,8 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 	// Header - Name
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 18)
-	pdf.CellFormat(0, 12, cv.PersonalInfo.FullName, "", 1, "L", false, 0, "")
+	cleanName := tr(s.cleanText(cv.PersonalInfo.FullName))
+	pdf.CellFormat(0, 12, cleanName, "", 1, "L", false, 0, "")
 	pdf.Ln(3)
 
 	// Contact Information
@@ -49,22 +89,22 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 
 	var contactParts []string
 	if cv.PersonalInfo.Email != "" {
-		contactParts = append(contactParts, cv.PersonalInfo.Email)
+		contactParts = append(contactParts, tr(s.cleanText(cv.PersonalInfo.Email)))
 	}
 	if cv.PersonalInfo.Phone != "" {
-		contactParts = append(contactParts, cv.PersonalInfo.Phone)
+		contactParts = append(contactParts, tr(s.cleanText(cv.PersonalInfo.Phone)))
 	}
 	if cv.PersonalInfo.Location != "" {
-		contactParts = append(contactParts, cv.PersonalInfo.Location)
+		contactParts = append(contactParts, tr(s.cleanText(cv.PersonalInfo.Location)))
 	}
 	if cv.PersonalInfo.LinkedIn != "" {
-		contactParts = append(contactParts, "LinkedIn: "+cv.PersonalInfo.LinkedIn)
+		contactParts = append(contactParts, "LinkedIn: "+tr(s.cleanText(cv.PersonalInfo.LinkedIn)))
 	}
 	if cv.PersonalInfo.GitHub != "" {
-		contactParts = append(contactParts, "GitHub: "+cv.PersonalInfo.GitHub)
+		contactParts = append(contactParts, "GitHub: "+tr(s.cleanText(cv.PersonalInfo.GitHub)))
 	}
 	if cv.PersonalInfo.Website != "" {
-		contactParts = append(contactParts, cv.PersonalInfo.Website)
+		contactParts = append(contactParts, tr(s.cleanText(cv.PersonalInfo.Website)))
 	}
 
 	if len(contactParts) > 0 {
@@ -85,27 +125,27 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 
 	// Summary Section
 	if cv.PersonalInfo.Summary != "" {
-		s.addSection(pdf, "SUMMARY", cv.PersonalInfo.Summary, textColor, lightTextColor, separatorColor)
+		s.addSection(pdf, tr, "RESUMEN", s.cleanText(cv.PersonalInfo.Summary), textColor, lightTextColor, separatorColor)
 	}
 
 	// Experience Section
 	if len(cv.Experience) > 0 {
-		s.addExperienceSection(pdf, cv.Experience, textColor, lightTextColor, separatorColor)
+		s.addExperienceSection(pdf, tr, cv.Experience, textColor, lightTextColor, separatorColor)
 	}
 
 	// Education Section
 	if len(cv.Education) > 0 {
-		s.addEducationSection(pdf, cv.Education, textColor, lightTextColor, separatorColor)
+		s.addEducationSection(pdf, tr, cv.Education, textColor, lightTextColor, separatorColor)
 	}
 
 	// Skills Section
 	if len(cv.Skills) > 0 {
-		s.addSkillsSection(pdf, cv.Skills, textColor, lightTextColor, separatorColor)
+		s.addSkillsSection(pdf, tr, cv.Skills, textColor, lightTextColor, separatorColor)
 	}
 
 	// Languages Section
 	if len(cv.Languages) > 0 {
-		s.addLanguagesSection(pdf, cv.Languages, textColor, lightTextColor, separatorColor)
+		s.addLanguagesSection(pdf, tr, cv.Languages, textColor, lightTextColor, separatorColor)
 	}
 
 	// Generate PDF bytes
@@ -122,11 +162,11 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 	return buf, nil
 }
 
-func (s *PDFService) addSection(pdf *gofpdf.Fpdf, title, content string, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addSection(pdf *gofpdf.Fpdf, tr func(string) string, title, content string, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, title, "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr(s.cleanText(title)), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -137,18 +177,18 @@ func (s *PDFService) addSection(pdf *gofpdf.Fpdf, title, content string, textCol
 	pdf.SetFont("Arial", "", 10)
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 
-	lines := s.splitText(pdf, content, 160)
+	lines := s.splitText(pdf, tr(content), 160)
 	for _, line := range lines {
 		pdf.CellFormat(0, 5, line, "", 1, "L", false, 0, "")
 	}
 	pdf.Ln(5)
 }
 
-func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, experiences []models.Experience, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, tr func(string) string, experiences []models.Experience, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, "EXPERIENCE", "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr("EXPERIENCIA"), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -159,17 +199,17 @@ func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, experiences []models
 		// Item title
 		pdf.SetFont("Arial", "B", 10)
 		pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
-		title := fmt.Sprintf("%s at %s", exp.Position, exp.Company)
+		title := fmt.Sprintf("%s en %s", tr(s.cleanText(exp.Position)), tr(s.cleanText(exp.Company)))
 		pdf.CellFormat(0, 5, title, "", 1, "L", false, 0, "")
 
 		// Item subtitle (dates)
 		pdf.SetFont("Arial", "I", 9)
 		pdf.SetTextColor(lightTextColor["r"], lightTextColor["g"], lightTextColor["b"])
-		dateRange := exp.StartDate
+		dateRange := tr(s.cleanText(exp.StartDate))
 		if exp.EndDate != "" {
-			dateRange += " - " + exp.EndDate
+			dateRange += " - " + tr(s.cleanText(exp.EndDate))
 		} else {
-			dateRange += " - Present"
+			dateRange += " - " + tr("Presente")
 		}
 		pdf.CellFormat(0, 4, dateRange, "", 1, "L", false, 0, "")
 
@@ -177,7 +217,7 @@ func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, experiences []models
 		if exp.Description != "" {
 			pdf.SetFont("Arial", "", 10)
 			pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
-			lines := s.splitText(pdf, exp.Description, 160)
+			lines := s.splitText(pdf, tr(s.cleanText(exp.Description)), 160)
 			for _, line := range lines {
 				pdf.CellFormat(0, 4, line, "", 1, "L", false, 0, "")
 			}
@@ -190,11 +230,11 @@ func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, experiences []models
 	pdf.Ln(5)
 }
 
-func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, education []models.Education, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, tr func(string) string, education []models.Education, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, "EDUCATION", "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr("EDUCACIÓN"), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -205,17 +245,17 @@ func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, education []models.Ed
 		// Item title
 		pdf.SetFont("Arial", "B", 10)
 		pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
-		title := fmt.Sprintf("%s - %s", edu.Degree, edu.Institution)
+		title := fmt.Sprintf("%s - %s", tr(s.cleanText(edu.Degree)), tr(s.cleanText(edu.Institution)))
 		pdf.CellFormat(0, 5, title, "", 1, "L", false, 0, "")
 
 		// Item subtitle (dates)
 		pdf.SetFont("Arial", "I", 9)
 		pdf.SetTextColor(lightTextColor["r"], lightTextColor["g"], lightTextColor["b"])
-		dateRange := edu.StartDate
+		dateRange := tr(s.cleanText(edu.StartDate))
 		if edu.EndDate != "" {
-			dateRange += " - " + edu.EndDate
+			dateRange += " - " + tr(s.cleanText(edu.EndDate))
 		} else {
-			dateRange += " - Present"
+			dateRange += " - " + tr("Presente")
 		}
 		pdf.CellFormat(0, 4, dateRange, "", 1, "L", false, 0, "")
 
@@ -223,7 +263,7 @@ func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, education []models.Ed
 		if edu.Description != "" {
 			pdf.SetFont("Arial", "", 10)
 			pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
-			lines := s.splitText(pdf, edu.Description, 160)
+			lines := s.splitText(pdf, tr(s.cleanText(edu.Description)), 160)
 			for _, line := range lines {
 				pdf.CellFormat(0, 4, line, "", 1, "L", false, 0, "")
 			}
@@ -236,11 +276,11 @@ func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, education []models.Ed
 	pdf.Ln(5)
 }
 
-func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, skills []models.Skill, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, tr func(string) string, skills []models.Skill, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, "SKILLS", "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr("HABILIDADES"), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -266,9 +306,9 @@ func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, skills []models.Skill, t
 
 		pdf.SetXY(x, y)
 
-		skillText := skill.Name
+		skillText := tr(s.cleanText(skill.Name))
 		if skill.Level != "" {
-			skillText += " (" + skill.Level + ")"
+			skillText += " (" + tr(s.cleanText(skill.Level)) + ")"
 		}
 
 		pdf.CellFormat(colWidth, lineHeight, skillText, "", 0, "L", false, 0, "")
@@ -277,11 +317,11 @@ func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, skills []models.Skill, t
 	pdf.SetXY(25, y+lineHeight+5)
 }
 
-func (s *PDFService) addLanguagesSection(pdf *gofpdf.Fpdf, languages []string, textColor, lightTextColor, separatorColor map[string]int) {
+func (s *PDFService) addLanguagesSection(pdf *gofpdf.Fpdf, tr func(string) string, languages []string, textColor, lightTextColor, separatorColor map[string]int) {
 	// Section title
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 6, "LANGUAGES", "", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 6, tr("IDIOMAS"), "", 1, "L", false, 0, "")
 
 	// Section separator
 	pdf.SetDrawColor(separatorColor["r"], separatorColor["g"], separatorColor["b"])
@@ -291,7 +331,12 @@ func (s *PDFService) addLanguagesSection(pdf *gofpdf.Fpdf, languages []string, t
 	pdf.SetFont("Arial", "", 10)
 	pdf.SetTextColor(textColor["r"], textColor["g"], textColor["b"])
 
-	languageText := strings.Join(languages, " • ")
+	var cleanLanguages []string
+	for _, lang := range languages {
+		cleanLanguages = append(cleanLanguages, tr(s.cleanText(lang)))
+	}
+
+	languageText := strings.Join(cleanLanguages, " • ")
 	lines := s.splitText(pdf, languageText, 160)
 	for _, line := range lines {
 		pdf.CellFormat(0, 5, line, "", 1, "L", false, 0, "")

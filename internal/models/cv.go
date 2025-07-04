@@ -40,5 +40,6 @@ type CV struct {
 	Experience   []Experience `json:"experience"`
 	Skills       []Skill      `json:"skills"`
 	Languages    []string     `json:"languages"`
+	Language     string       `json:"language" form:"language"` // UI language (en/es)
 	CreatedAt    time.Time    `json:"createdAt"`
 }

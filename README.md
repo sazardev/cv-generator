@@ -7,16 +7,19 @@ Un generador de CV minimalista y monocromático con diseño estilo Notion, desar
 - 🎨 **Diseño Monocromático**: Solo blanco, negro y tonalidades de grises, inspirado en Notion
 - 📱 **Interfaz Minimalista**: UI limpia y moderna con tipografía Notion-style
 - 👁️ **Vista Previa en Tiempo Real**: Preview idéntico al PDF final
-- 📄 **Exportación PDF**: Genera PDFs profesionales con diseño exacto a la vista previa
-- ⚡ **Rendimiento Rápido**: Construido con Go y Fiber para máxima velocidad
+- 📄 **Exportación PDF Nativa**: Genera PDFs con Go puro, sin dependencias externas
+- ⚡ **Completamente Portátil**: Solo necesitas Go - no requiere instalaciones adicionales
+- 🌍 **Soporte UTF-8 Completo**: Maneja acentos, ñ y caracteres especiales correctamente
+- 🔧 **Sin Dependencias Externas**: No requiere wkhtmltopdf ni otros ejecutables
 - 📋 **Formularios Dinámicos**: Agrega/elimina experiencias, educación, habilidades dinámicamente
 
 ## Tecnologías
 
 - **Backend**: Go + Fiber
 - **Frontend**: HTML5, CSS3 (Grid/Flexbox), JavaScript
-- **PDF**: wkhtmltopdf para generación exacta HTML→PDF
+- **PDF**: gofpdf (librería nativa de Go)
 - **Tipografía**: ui-sans-serif, -apple-system (estilo Notion)
+- **Codificación**: UTF-8 completo con soporte para caracteres latinos
 
 ## 🚀 Inicio rápido
 
@@ -121,7 +124,8 @@ cv-generator/
 
 - **Backend**: Go, Fiber framework
 - **Frontend**: HTML5, CSS3, JavaScript vanilla
-- **PDF Generation**: gofpdf
+- **PDF Generation**: gofpdf (librería nativa de Go)
+- **Codificación**: UTF-8 completo con corrección automática de caracteres mal codificados
 - **Styling**: CSS personalizado inspirado en Notion
 
 ## Contribuir

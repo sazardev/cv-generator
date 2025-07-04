@@ -99,12 +99,20 @@ func (h *CVHandler) GeneratePDF(c *fiber.Ctx) error {
 	}
 	log.Printf("✅ Languages parsed: %+v", languages)
 
+	// Parse UI language
+	uiLanguage := c.FormValue("language")
+	if uiLanguage == "" {
+		uiLanguage = "en" // default to English
+	}
+	log.Printf("🌐 UI Language: %s", uiLanguage)
+
 	cv = models.CV{
 		PersonalInfo: personalInfo,
 		Education:    education,
 		Experience:   experience,
 		Skills:       skills,
 		Languages:    languages,
+		Language:     uiLanguage,
 		CreatedAt:    time.Now(),
 	}
 	log.Printf("✅ CV struct created: %+v", cv)
