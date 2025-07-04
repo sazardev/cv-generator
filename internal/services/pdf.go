@@ -78,10 +78,11 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 	pdfg.Dpi.Set(300)
 	pdfg.Orientation.Set(wkhtmltopdf.OrientationPortrait)
 	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
-	pdfg.MarginTop.Set(0)
-	pdfg.MarginBottom.Set(0)
-	pdfg.MarginLeft.Set(0)
-	pdfg.MarginRight.Set(0)
+	// Set proper margins to ensure consistent spacing across pages
+	pdfg.MarginTop.Set(25)    // 25mm top margin
+	pdfg.MarginBottom.Set(25) // 25mm bottom margin
+	pdfg.MarginLeft.Set(25)   // 25mm left margin
+	pdfg.MarginRight.Set(25)  // 25mm right margin
 	log.Println("✅ PDF options configured")
 
 	// Add the HTML page
@@ -90,6 +91,10 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 	page.DisableSmartShrinking.Set(true)
 	page.EnableLocalFileAccess.Set(true)
 	page.LoadErrorHandling.Set("ignore")
+	// Additional page options for better multi-page rendering
+	page.PrintMediaType.Set(true)
+	page.NoBackground.Set(false)
+	page.MinimumFontSize.Set(0)
 	pdfg.AddPage(page)
 	log.Println("✅ HTML page added")
 
@@ -108,14 +113,6 @@ func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
 	return pdfBytes, nil
 }
 
-// Helper function for min
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // Fallback embedded template
 func getEmbeddedTemplate() string {
 	return `<!DOCTYPE html>
@@ -124,28 +121,58 @@ func getEmbeddedTemplate() string {
     <meta charset="UTF-8">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        @page { size: A4; margin: 25mm; }
+        @page { size: A4; margin: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            color: #000000;
+            color: #37352f;
             line-height: 1.6;
             font-size: 11pt;
             background: white;
+            margin: 0;
+            padding: 0;
         }
-        .name { font-size: 24pt; font-weight: 700; margin-bottom: 10pt; }
-        .contact-info { font-size: 9pt; color: #666666; margin-bottom: 20pt; }
-        .section { margin-bottom: 20pt; }
+        .name { 
+            font-size: 24pt; 
+            font-weight: 700; 
+            margin-bottom: 10pt; 
+            page-break-after: avoid;
+        }
+        .contact-info { 
+            font-size: 9pt; 
+            color: #6f6f6f; 
+            margin-bottom: 20pt; 
+        }
+        .section { 
+            margin-bottom: 20pt; 
+            page-break-inside: avoid;
+            orphans: 2;
+            widows: 2;
+        }
         .section-title { 
             font-size: 11pt; 
             font-weight: 700; 
             text-transform: uppercase; 
             margin-bottom: 10pt;
-            border-bottom: 1pt solid #e5e5e5;
+            border-bottom: 1pt solid #e3e2e0;
             padding-bottom: 4pt;
+            page-break-after: avoid;
         }
-        .item { margin-bottom: 12pt; }
-        .item-title { font-weight: 600; margin-bottom: 3pt; }
-        .item-subtitle { font-size: 9pt; color: #666666; font-style: italic; }
+        .item { 
+            margin-bottom: 12pt; 
+            page-break-inside: avoid;
+            orphans: 2;
+            widows: 2;
+        }
+        .item-title { 
+            font-weight: 600; 
+            margin-bottom: 3pt; 
+            page-break-after: avoid;
+        }
+        .item-subtitle { 
+            font-size: 9pt; 
+            color: #6f6f6f; 
+            font-style: italic; 
+        }
     </style>
 </head>
 <body>
