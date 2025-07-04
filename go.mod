@@ -3,9 +3,9 @@ module cv-generator
 go 1.24.4
 
 require (
+	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.9.2
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/template/html/v2 v2.1.3
-	github.com/jung-kurt/gofpdf v1.16.2
 )
 
 require (

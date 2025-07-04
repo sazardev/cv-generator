@@ -1,20 +1,59 @@
 # CV Generator
 
-CV Generator es una aplicación web simple que permite a los usuarios crear y descargar sus CVs en formato PDF. Está construida usando Go y el framework web Fiber.
-
-La aplicación web proporciona una interfaz fácil de usar donde los usuarios pueden ingresar su información personal, educación, experiencia laboral, habilidades y otros detalles relevantes. Una vez que el usuario ha completado el formulario, pueden generar una versión PDF de su CV.
-
-El estilo es muy simple y minimalista, enfocándose en el contenido más que en el diseño. El PDF generado es limpio y profesional, adecuado para aplicaciones de trabajo.
+Un generador de CV minimalista y monocromático con diseño estilo Notion, desarrollado en Go con Fiber. Permite crear CVs profesionales con vista previa web y exportación a PDF con coincidencia visual exacta.
 
 ## Características
-- Formulario amigable para ingresar detalles del CV
-- Generación de PDF usando Go's `html/template` y `github.com/jung-kurt/gofpdf`
-- Diseño minimalista inspirado en Notion
-- Fácil de desplegar y ejecutar en Google Cloud Run o cualquier otra plataforma en la nube
-- Autocontenido, no requiere dependencias externas
-- Soporta múltiples idiomas (actualmente solo inglés y español)
-- Vista previa en tiempo real del CV
-- Interfaz responsive y moderna
+
+- 🎨 **Diseño Monocromático**: Solo blanco, negro y tonalidades de grises, inspirado en Notion
+- 📱 **Interfaz Minimalista**: UI limpia y moderna con tipografía Notion-style
+- 👁️ **Vista Previa en Tiempo Real**: Preview idéntico al PDF final
+- 📄 **Exportación PDF**: Genera PDFs profesionales con diseño exacto a la vista previa
+- ⚡ **Rendimiento Rápido**: Construido con Go y Fiber para máxima velocidad
+- 📋 **Formularios Dinámicos**: Agrega/elimina experiencias, educación, habilidades dinámicamente
+
+## Tecnologías
+
+- **Backend**: Go + Fiber
+- **Frontend**: HTML5, CSS3 (Grid/Flexbox), JavaScript
+- **PDF**: wkhtmltopdf para generación exacta HTML→PDF
+- **Tipografía**: ui-sans-serif, -apple-system (estilo Notion)
+
+## 🚀 Inicio rápido
+
+### Windows
+```bash
+# Ejecuta el archivo batch
+run.bat
+```
+
+### Linux/Mac
+```bash
+# Instala dependencias
+go mod tidy
+
+# Ejecuta la aplicación
+go run cmd/server/main.go
+```
+
+Abre tu navegador en `http://localhost:3000`
+
+## 📋 Uso
+
+1. **Completa tu información personal**: Nombre, email, teléfono, enlaces profesionales
+2. **Agrega tu experiencia**: Empresas, cargos, fechas y descripciones
+3. **Incluye tu educación**: Títulos, instituciones y logros
+4. **Lista tus habilidades**: Con niveles opcionales de competencia
+5. **Especifica idiomas**: Idiomas que hablas y tu nivel
+6. **Vista previa**: Revisa cómo se ve tu CV
+7. **Exporta**: Descarga tu PDF profesional
+
+## 🎨 Diseño
+
+El diseño se centra en:
+- **Monocromatismo**: Elegante paleta en blanco y negro
+- **Tipografía limpia**: Fuentes profesionales y legibles
+- **Espaciado perfecto**: Diseño balanceado y organizado
+- **Minimalismo funcional**: Simple pero sofisticado
 
 ## Instalación y Uso
 

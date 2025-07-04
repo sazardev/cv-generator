@@ -2,275 +2,163 @@ package services
 
 import (
 	"bytes"
-	"fmt"
+	"html/template"
+	"log"
+	"path/filepath"
 	"strings"
 
 	"cv-generator/internal/models"
 
-	"github.com/jung-kurt/gofpdf"
+	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
 )
 
-type PDFService struct{}
+type PDFService struct {
+	template *template.Template
+}
 
 func NewPDFService() *PDFService {
-	return &PDFService{}
+	log.Println("🔧 Initializing PDF service...")
+
+	// Load CV template
+	tmplPath := filepath.Join("web", "templates", "cv_template.html")
+	log.Printf("📄 Loading template from: %s", tmplPath)
+
+	tmpl, err := template.ParseFiles(tmplPath)
+	if err != nil {
+		log.Printf("⚠️ Template file not found, using embedded template: %v", err)
+		// Fallback to embedded template if file not found
+		tmpl = template.Must(template.New("cv").Parse(getEmbeddedTemplate()))
+	} else {
+		log.Println("✅ Template loaded successfully from file")
+	}
+
+	log.Println("✅ PDF service initialized")
+	return &PDFService{
+		template: tmpl,
+	}
 }
 
 func (s *PDFService) GenerateCV(cv models.CV) ([]byte, error) {
-	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.AddPage()
+	log.Println("🎨 Generating HTML from template...")
 
-	// Set margins
-	pdf.SetMargins(20, 20, 20)
-	pdf.SetAutoPageBreak(true, 20)
-
-	// Header - Personal Information
-	s.addHeader(pdf, cv.PersonalInfo)
-
-	// Summary
-	if cv.PersonalInfo.Summary != "" {
-		s.addSection(pdf, "SUMMARY", cv.PersonalInfo.Summary)
+	// Generate HTML from template
+	var htmlBuffer bytes.Buffer
+	err := s.template.Execute(&htmlBuffer, cv)
+	if err != nil {
+		log.Printf("❌ Template execution failed: %v", err)
+		return nil, err
 	}
 
-	// Experience
-	if len(cv.Experience) > 0 {
-		s.addExperienceSection(pdf, cv.Experience)
-	}
+	htmlContent := htmlBuffer.String()
+	log.Printf("✅ HTML generated successfully, length: %d characters", len(htmlContent))
 
-	// Education
-	if len(cv.Education) > 0 {
-		s.addEducationSection(pdf, cv.Education)
+	// Show a preview of the HTML (safely)
+	previewLength := 500
+	if len(htmlContent) < previewLength {
+		previewLength = len(htmlContent)
 	}
+	log.Printf("📋 HTML preview (first %d chars): %s...", previewLength, htmlContent[:previewLength])
 
-	// Skills
-	if len(cv.Skills) > 0 {
-		s.addSkillsSection(pdf, cv.Skills)
+	// Create PDF from HTML using wkhtmltopdf
+	log.Println("🔧 Initializing wkhtmltopdf...")
+
+	// Set the path to wkhtmltopdf executable
+	wkhtmltopdf.SetPath("C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe")
+	log.Println("✅ wkhtmltopdf path configured")
+
+	pdfg, err := wkhtmltopdf.NewPDFGenerator()
+	if err != nil {
+		log.Printf("❌ Failed to create PDF generator: %v", err)
+		return nil, err
 	}
+	log.Println("✅ PDF generator created")
 
-	// Languages
-	if len(cv.Languages) > 0 {
-		s.addLanguagesSection(pdf, cv.Languages)
+	// Configure PDF options for professional output
+	log.Println("⚙️ Configuring PDF options...")
+	pdfg.Dpi.Set(300)
+	pdfg.Orientation.Set(wkhtmltopdf.OrientationPortrait)
+	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
+	pdfg.MarginTop.Set(0)
+	pdfg.MarginBottom.Set(0)
+	pdfg.MarginLeft.Set(0)
+	pdfg.MarginRight.Set(0)
+	log.Println("✅ PDF options configured")
+
+	// Add the HTML page
+	log.Println("📄 Adding HTML page to PDF generator...")
+	page := wkhtmltopdf.NewPageReader(strings.NewReader(htmlContent))
+	page.DisableSmartShrinking.Set(true)
+	page.EnableLocalFileAccess.Set(true)
+	page.LoadErrorHandling.Set("ignore")
+	pdfg.AddPage(page)
+	log.Println("✅ HTML page added")
+
+	// Generate PDF
+	log.Println("🎯 Creating PDF...")
+	err = pdfg.Create()
+	if err != nil {
+		log.Printf("❌ PDF creation failed: %v", err)
+		return nil, err
 	}
+	log.Println("✅ PDF created successfully")
 
-	// Get PDF bytes
-	var buf bytes.Buffer
-	err := pdf.Output(&buf)
-	return buf.Bytes(), err
+	pdfBytes := pdfg.Bytes()
+	log.Printf("✅ PDF generation completed, size: %d bytes", len(pdfBytes))
+
+	return pdfBytes, nil
 }
 
-func (s *PDFService) addHeader(pdf *gofpdf.Fpdf, info models.PersonalInfo) {
-	// Name
-	pdf.SetFont("Arial", "B", 24)
-	pdf.SetTextColor(44, 62, 80)
-	pdf.Cell(0, 15, info.FullName)
-	pdf.Ln(12)
-
-	// Contact information
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(100, 100, 100)
-
-	contacts := []string{}
-	if info.Email != "" {
-		contacts = append(contacts, info.Email)
+// Helper function for min
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
-	if info.Phone != "" {
-		contacts = append(contacts, info.Phone)
-	}
-	if info.Location != "" {
-		contacts = append(contacts, info.Location)
-	}
-	if info.LinkedIn != "" {
-		contacts = append(contacts, "LinkedIn: "+info.LinkedIn)
-	}
-	if info.GitHub != "" {
-		contacts = append(contacts, "GitHub: "+info.GitHub)
-	}
-	if info.Website != "" {
-		contacts = append(contacts, "Website: "+info.Website)
-	}
-
-	if len(contacts) > 0 {
-		pdf.Cell(0, 5, strings.Join(contacts, " | "))
-		pdf.Ln(8)
-	}
-
-	// Add separator line
-	pdf.SetDrawColor(200, 200, 200)
-	pdf.Line(20, pdf.GetY(), 190, pdf.GetY())
-	pdf.Ln(8)
+	return b
 }
 
-func (s *PDFService) addSection(pdf *gofpdf.Fpdf, title, content string) {
-	// Section title
-	pdf.SetFont("Arial", "B", 14)
-	pdf.SetTextColor(44, 62, 80)
-	pdf.Cell(0, 8, title)
-	pdf.Ln(6)
-
-	// Content
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(80, 80, 80)
-
-	// Split content into lines to handle long text
-	lines := s.splitText(pdf, content, 170)
-	for _, line := range lines {
-		pdf.Cell(0, 5, line)
-		pdf.Ln(5)
-	}
-	pdf.Ln(4)
-}
-
-func (s *PDFService) addExperienceSection(pdf *gofpdf.Fpdf, experiences []models.Experience) {
-	pdf.SetFont("Arial", "B", 14)
-	pdf.SetTextColor(44, 62, 80)
-	pdf.Cell(0, 8, "EXPERIENCE")
-	pdf.Ln(6)
-
-	for _, exp := range experiences {
-		// Position and Company
-		pdf.SetFont("Arial", "B", 12)
-		pdf.SetTextColor(60, 60, 60)
-		pdf.Cell(0, 6, fmt.Sprintf("%s at %s", exp.Position, exp.Company))
-		pdf.Ln(5)
-
-		// Dates
-		pdf.SetFont("Arial", "I", 9)
-		pdf.SetTextColor(120, 120, 120)
-		dateRange := fmt.Sprintf("%s - %s", exp.StartDate, exp.EndDate)
-		if exp.EndDate == "" {
-			dateRange = fmt.Sprintf("%s - Present", exp.StartDate)
-		}
-		pdf.Cell(0, 4, dateRange)
-		pdf.Ln(4)
-
-		// Description
-		if exp.Description != "" {
-			pdf.SetFont("Arial", "", 10)
-			pdf.SetTextColor(80, 80, 80)
-			lines := s.splitText(pdf, exp.Description, 170)
-			for _, line := range lines {
-				pdf.Cell(0, 4, line)
-				pdf.Ln(4)
-			}
-		}
-		pdf.Ln(3)
-	}
-	pdf.Ln(2)
-}
-
-func (s *PDFService) addEducationSection(pdf *gofpdf.Fpdf, educations []models.Education) {
-	pdf.SetFont("Arial", "B", 14)
-	pdf.SetTextColor(44, 62, 80)
-	pdf.Cell(0, 8, "EDUCATION")
-	pdf.Ln(6)
-
-	for _, edu := range educations {
-		// Degree and Institution
-		pdf.SetFont("Arial", "B", 12)
-		pdf.SetTextColor(60, 60, 60)
-		pdf.Cell(0, 6, fmt.Sprintf("%s - %s", edu.Degree, edu.Institution))
-		pdf.Ln(5)
-
-		// Dates
-		pdf.SetFont("Arial", "I", 9)
-		pdf.SetTextColor(120, 120, 120)
-		dateRange := fmt.Sprintf("%s - %s", edu.StartDate, edu.EndDate)
-		if edu.EndDate == "" {
-			dateRange = fmt.Sprintf("%s - Present", edu.StartDate)
-		}
-		pdf.Cell(0, 4, dateRange)
-		pdf.Ln(4)
-
-		// Description
-		if edu.Description != "" {
-			pdf.SetFont("Arial", "", 10)
-			pdf.SetTextColor(80, 80, 80)
-			lines := s.splitText(pdf, edu.Description, 170)
-			for _, line := range lines {
-				pdf.Cell(0, 4, line)
-				pdf.Ln(4)
-			}
-		}
-		pdf.Ln(3)
-	}
-	pdf.Ln(2)
-}
-
-func (s *PDFService) addSkillsSection(pdf *gofpdf.Fpdf, skills []models.Skill) {
-	pdf.SetFont("Arial", "B", 14)
-	pdf.SetTextColor(44, 62, 80)
-	pdf.Cell(0, 8, "SKILLS")
-	pdf.Ln(6)
-
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(80, 80, 80)
-
-	skillTexts := []string{}
-	for _, skill := range skills {
-		if skill.Level != "" {
-			skillTexts = append(skillTexts, fmt.Sprintf("%s (%s)", skill.Name, skill.Level))
-		} else {
-			skillTexts = append(skillTexts, skill.Name)
-		}
-	}
-
-	skillsText := strings.Join(skillTexts, " • ")
-	lines := s.splitText(pdf, skillsText, 170)
-	for _, line := range lines {
-		pdf.Cell(0, 5, line)
-		pdf.Ln(5)
-	}
-	pdf.Ln(4)
-}
-
-func (s *PDFService) addLanguagesSection(pdf *gofpdf.Fpdf, languages []string) {
-	pdf.SetFont("Arial", "B", 14)
-	pdf.SetTextColor(44, 62, 80)
-	pdf.Cell(0, 8, "LANGUAGES")
-	pdf.Ln(6)
-
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(80, 80, 80)
-
-	languagesText := strings.Join(languages, " • ")
-	lines := s.splitText(pdf, languagesText, 170)
-	for _, line := range lines {
-		pdf.Cell(0, 5, line)
-		pdf.Ln(5)
-	}
-	pdf.Ln(4)
-}
-
-func (s *PDFService) splitText(pdf *gofpdf.Fpdf, text string, maxWidth float64) []string {
-	words := strings.Fields(text)
-	if len(words) == 0 {
-		return []string{}
-	}
-
-	var lines []string
-	var currentLine string
-
-	for _, word := range words {
-		testLine := currentLine
-		if testLine != "" {
-			testLine += " "
-		}
-		testLine += word
-
-		width := pdf.GetStringWidth(testLine)
-		if width <= maxWidth {
-			currentLine = testLine
-		} else {
-			if currentLine != "" {
-				lines = append(lines, currentLine)
-			}
-			currentLine = word
-		}
-	}
-
-	if currentLine != "" {
-		lines = append(lines, currentLine)
-	}
-
-	return lines
+// Fallback embedded template
+func getEmbeddedTemplate() string {
+	return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4; margin: 25mm; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            color: #000000;
+            line-height: 1.6;
+            font-size: 11pt;
+            background: white;
+        }
+        .name { font-size: 24pt; font-weight: 700; margin-bottom: 10pt; }
+        .contact-info { font-size: 9pt; color: #666666; margin-bottom: 20pt; }
+        .section { margin-bottom: 20pt; }
+        .section-title { 
+            font-size: 11pt; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            margin-bottom: 10pt;
+            border-bottom: 1pt solid #e5e5e5;
+            padding-bottom: 4pt;
+        }
+        .item { margin-bottom: 12pt; }
+        .item-title { font-weight: 600; margin-bottom: 3pt; }
+        .item-subtitle { font-size: 9pt; color: #666666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1 class="name">{{.PersonalInfo.FullName}}</h1>
+    <div class="contact-info">
+        {{.PersonalInfo.Email}}{{if .PersonalInfo.Phone}} • {{.PersonalInfo.Phone}}{{end}}{{if .PersonalInfo.Location}} • {{.PersonalInfo.Location}}{{end}}
+    </div>
+    {{if .PersonalInfo.Summary}}
+    <div class="section">
+        <h2 class="section-title">Summary</h2>
+        <p>{{.PersonalInfo.Summary}}</p>
+    </div>
+    {{end}}
+</body>
+</html>`
 }

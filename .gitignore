@@ -1,3 +1,4 @@
 .env
 *.exe
 *.dll
+*.pdf

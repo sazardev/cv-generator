@@ -388,14 +388,14 @@ function generatePreview(personalInfo, experience, education, skills, languages)
         html += `<div class="cv-contact">${contacts.join(' | ')}</div>`;
     }
 
-    html += `<div class="cv-separator"></div>`;
+    html += `<hr class="cv-separator">`;
     html += `</div>`; // Close cv-header
 
     // Summary section - exact PDF format
     if (personalInfo.summary) {
         html += `
             <div class="cv-section">
-                <div class="cv-section-title">SUMMARY</div>
+                <h2 class="cv-section-title">SUMMARY</h2>
                 <div class="cv-section-content">${personalInfo.summary}</div>
             </div>
         `;
@@ -405,12 +405,12 @@ function generatePreview(personalInfo, experience, education, skills, languages)
     if (experience.length > 0) {
         html += `
             <div class="cv-section">
-                <div class="cv-section-title">EXPERIENCE</div>
+                <h2 class="cv-section-title">EXPERIENCE</h2>
         `;
         experience.forEach(exp => {
             html += `
                 <div class="cv-item">
-                    <div class="cv-item-title">${exp.position} at ${exp.company}</div>
+                    <h3 class="cv-item-title">${exp.position} at ${exp.company}</h3>
             `;
 
             // Date formatting exactly like PDF
@@ -438,12 +438,12 @@ function generatePreview(personalInfo, experience, education, skills, languages)
     if (education.length > 0) {
         html += `
             <div class="cv-section">
-                <div class="cv-section-title">EDUCATION</div>
+                <h2 class="cv-section-title">EDUCATION</h2>
         `;
         education.forEach(edu => {
             html += `
                 <div class="cv-item">
-                    <div class="cv-item-title">${edu.degree} - ${edu.institution}</div>
+                    <h3 class="cv-item-title">${edu.degree} - ${edu.institution}</h3>
             `;
 
             // Date formatting exactly like PDF
@@ -471,12 +471,12 @@ function generatePreview(personalInfo, experience, education, skills, languages)
     if (skills.length > 0) {
         html += `
             <div class="cv-section">
-                <div class="cv-section-title">SKILLS</div>
+                <h2 class="cv-section-title">SKILLS</h2>
         `;
         const skillTexts = skills.map(skill =>
             skill.level ? `${skill.name} (${skill.level})` : skill.name
         );
-        html += `<div class="cv-list-content">${skillTexts.join(' • ')}</div>`;
+        html += `<div class="cv-skills-content">${skillTexts.join(' • ')}</div>`;
         html += `</div>`; // Close skills section
     }
 
@@ -484,8 +484,8 @@ function generatePreview(personalInfo, experience, education, skills, languages)
     if (languages.length > 0) {
         html += `
             <div class="cv-section">
-                <div class="cv-section-title">LANGUAGES</div>
-                <div class="cv-list-content">${languages.join(' • ')}</div>
+                <h2 class="cv-section-title">LANGUAGES</h2>
+                <div class="cv-languages-content">${languages.join(' • ')}</div>
             </div>
         `;
     }
